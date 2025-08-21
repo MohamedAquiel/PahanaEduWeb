@@ -50,7 +50,7 @@
         </div>
         <% } %>
 
-        <form action="${pageContext.request.contextPath}/login" method="post" class="login-form" id="loginForm">
+        <form action="login" method="post" class="login-form" id="loginForm">
             <input type="hidden" name="action" value="login">
 
             <div class="form-group">
@@ -119,10 +119,28 @@
     </div>
 </div>
 
-<script src="${pageContext.request.contextPath}/js/login.js"></script>
+<!-- <script src="${pageContext.request.contextPath}/js/login.js"></script> -->
 <script>
     // Auto-hide alerts after 5 seconds
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('🔥 LOGIN PAGE LOADED - ready for debugging');
+
+        // Show debug info from previous submission if it exists
+        const debugInfo = localStorage.getItem('loginDebug');
+        if (debugInfo) {
+            const parsed = JSON.parse(debugInfo);
+            console.log('🔥🔥🔥 FORM WAS SUBMITTED WITH THESE VALUES:');
+            console.log('🔥 Username sent:', parsed.username);
+            console.log('🔥 Password length sent:', parsed.passwordLength);
+            console.log('🔥 Form action was:', parsed.formAction);
+            console.log('🔥 Username field name:', parsed.usernameFieldName);
+            console.log('🔥 Password field name:', parsed.passwordFieldName);
+            console.log('🔥🔥🔥 END DEBUG INFO');
+            // Clear it so we don't show it again
+            localStorage.removeItem('loginDebug');
+        } else {
+            console.log('🔥 No previous submission found - this is the first load');
+        }
         const alerts = document.querySelectorAll('.alert');
         alerts.forEach(function(alert) {
             setTimeout(function() {
@@ -159,39 +177,64 @@
         }
     });
 
-    // Form submission handling
+    // Form submission handling with debugging
     document.getElementById('loginForm').addEventListener('submit', function(e) {
+        console.log('🔥 FORM SUBMISSION STARTED');
+
+        // Save debug info that persists across page reload
+        const debugInfo = {
+            timestamp: new Date().toISOString(),
+            formAction: this.action,
+            formMethod: this.method,
+            username: document.getElementById('username').value.trim(),
+            passwordLength: document.getElementById('password').value.trim().length,
+            usernameFieldName: document.getElementById('username').name,
+            passwordFieldName: document.getElementById('password').name
+        };
+
+        localStorage.setItem('loginDebug', JSON.stringify(debugInfo));
+        console.log('🔥 DEBUG INFO SAVED:', debugInfo);
+
         const loginBtn = document.getElementById('loginBtn');
         const btnText = loginBtn.querySelector('.btn-text');
         const btnLoading = loginBtn.querySelector('.btn-loading');
         const overlay = document.getElementById('loadingOverlay');
 
-        // Show loading state
-        btnText.style.display = 'none';
-        btnLoading.style.display = 'inline-flex';
-        loginBtn.disabled = true;
-        overlay.style.display = 'flex';
-
         // Basic client-side validation
         const username = document.getElementById('username').value.trim();
         const password = document.getElementById('password').value.trim();
 
+        console.log('🔥 VALIDATING - Username: "' + username + '" (length: ' + username.length + ')');
+        console.log('🔥 VALIDATING - Password length: ' + password.length);
+
         if (!username || !password) {
+            console.log('🔥 VALIDATION FAILED - empty fields, preventing submission');
             e.preventDefault();
-
-            // Reset button state
-            btnText.style.display = 'inline';
-            btnLoading.style.display = 'none';
-            loginBtn.disabled = false;
-            overlay.style.display = 'none';
-
             if (!username) {
                 document.getElementById('usernameError').textContent = 'Username is required';
             }
             if (!password) {
                 document.getElementById('passwordError').textContent = 'Password is required';
             }
+            return false;
         }
+
+        console.log('🔥 VALIDATION PASSED - allowing form to submit naturally');
+
+        // Show loading state
+        if (btnText && btnLoading) {
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline-flex';
+        }
+        if (loginBtn) {
+            loginBtn.disabled = true;
+        }
+        if (overlay) {
+            overlay.style.display = 'flex';
+        }
+
+        // Allow form to submit normally
+        return true;
     });
 
     // Clear error messages on input
